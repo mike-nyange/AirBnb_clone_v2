@@ -1,38 +1,40 @@
 #!/usr/bin/python3
-""" State Module for HBNB project """
+"""
+    Implementation of the State class
+"""
 from models.base_model import BaseModel, Base
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
-from os import getenv
 from models.city import City
+from os import getenv
 import models
 
-if getenv('HBNB_TYPE_STORAGE') == 'db':
-    class State(BaseModel, Base):
-        """ State class """
-        __tablename__ = 'states'
+
+storage_type = getenv("HBNB_TYPE_STORAGE")
+
+
+class State(BaseModel, Base):
+    '''
+        Implementation for the State.
+    '''
+    __tablename__ = 'states'
+    if storage_type == 'db':
         name = Column(String(128), nullable=False)
-        # if state is deleted, all linked sity objects are also deleted
-        # The reference from a City object to his State should be named state
-        cities = relationship(
-            'City',
-            backref='state',
-            cascade='all, delete, delete-orphan')
+        cities = relationship("City", backref="state",
+                              cascade="all, delete-orphan")
+    else:
+        name = ""
 
-else:
-    class State(BaseModel):
-        """ State class """
-
-        name = ''
-
+    if storage_type != 'db':
         @property
         def cities(self):
             """
-            returns the list of City instances for the current State instance
+            get list of City instances with state_id
+            equals to the current State.id
             """
-
-            # Gets all cities
-            cities = models.storage.all(City).values()
-            # Gets cities where state.id = city.state_id
-            cities_list = [city for city in cities if self.id == city.state_id]
-            return cities_list
+            list_cities = []
+            all_cities = models.storage.all(City)
+            for key, city_obj in all_cities.items():
+                if city_obj.state_id == self.id:
+                    list_cities.append(city_obj)
+            return list_cities
